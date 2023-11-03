@@ -40,3 +40,56 @@ class BalanceView(APIView):
         )['total_expense'] or 0
         return {"cumulative_balance": float(cumulative_balance)}
 
+
+class ReportView(APIView):
+    def get(self, request):
+        # Get the report type from the query parameter
+        report_type = request.query_params.get('report_type')
+        if report_type == 'monthly_summary':
+            report_data = self.generate_monthly_summary()
+        elif report_type == 'category_summary':
+            report_data = self.generate_category_expenses()
+        else:
+            return Response(
+                {"error": "Invalid parameter. Query parameter 'report_type' should be "
+                          "monthly_summary or category_summary."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(report_data, status=status.HTTP_200_OK)
+
+    def generate_monthly_summary(self):
+        # Generate the monthly summary report (similar to the previous example)
+        # Calculating the sum of income and expenses for each month
+        monthly_summary = []
+        transactions = Transaction.objects.all()
+
+        for year in range(2023, 2024):
+            for month in range(1, 13):
+                total_income = transactions.filter(type='income', date__year=year, date__month=month).aggregate(
+                    total_income=models.Sum('amount'))['total_income'] or 0
+                total_expense = transactions.filter(type='expense', date__year=year, date__month=month).aggregate(
+                    total_expense=models.Sum('amount'))['total_expense'] or 0
+
+                monthly_summary.append({
+                    'year': year,
+                    'month': month,
+                    'total_income': total_income,
+                    'total_expense': total_expense,
+                })
+
+        return monthly_summary
+
+    def generate_category_expenses(self):
+        # Generate report per categories
+        categories = Transaction.objects.all().values_list('category', flat=True).distinct()
+        category_summary = []
+        for category in categories:
+            total_income = Transaction.objects.filter(type='income', category=category).aggregate(total_expense=models.Sum('amount'))['total_expense'] or 0
+            total_expense = Transaction.objects.filter(type='expense', category=category).aggregate(total_expense=models.Sum('amount'))['total_expense'] or 0
+            category_summary.append({
+                'category': category,
+                'total_expense': total_expense,
+                'total_income': total_income
+            })
+        return category_summary
