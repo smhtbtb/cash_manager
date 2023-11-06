@@ -25,6 +25,8 @@ class TransactionDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class BalanceView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         calculate_balance = self.calculate_balance()
         return Response(calculate_balance, status=status.HTTP_200_OK)
@@ -42,6 +44,8 @@ class BalanceView(APIView):
 
 
 class ReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         # Get the report type from the query parameter
         report_type = request.query_params.get('report_type')
